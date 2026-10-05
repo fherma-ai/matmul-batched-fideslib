@@ -25,6 +25,7 @@
 #include <cmath>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "openfhe.h"
@@ -60,8 +61,10 @@ void add_relinearisation_key(FIDESlib::CKKS::Context& gpu) {
     auto relin = std::dynamic_pointer_cast<lbcrypto::EvalKeyRelinImpl<lbcrypto::DCRTPoly>>(
         store.begin()->second.at(0));
     if (!relin) throw std::runtime_error("gpu_init: the evaluation key is not a relinearisation key");
+    // Named, not a temporary: Initialize takes a non-const reference.
+    FIDESlib::CKKS::RawKeySwitchKey raw = FIDESlib::CKKS::GetKeySwitchKey(relin);
     FIDESlib::CKKS::KeySwitchingKey key(gpu);
-    key.Initialize(FIDESlib::CKKS::GetKeySwitchKey(relin));
+    key.Initialize(raw);
     gpu->AddEvalKey(std::move(key));
 }
 
@@ -91,8 +94,9 @@ void add_rotation_keys(FIDESlib::CKKS::Context& gpu,
             throw std::runtime_error("gpu_init: no rotation key for index " + std::to_string(index) +
                                      " — declare it in config.jsonc");
         auto relin = std::dynamic_pointer_cast<lbcrypto::EvalKeyRelinImpl<lbcrypto::DCRTPoly>>(found->second);
+        FIDESlib::CKKS::RawKeySwitchKey raw = FIDESlib::CKKS::GetKeySwitchKey(relin);
         FIDESlib::CKKS::KeySwitchingKey key(gpu);
-        key.Initialize(FIDESlib::CKKS::GetKeySwitchKey(relin));
+        key.Initialize(raw);
         gpu->AddRotationKey(index, std::move(key));
     }
 }
